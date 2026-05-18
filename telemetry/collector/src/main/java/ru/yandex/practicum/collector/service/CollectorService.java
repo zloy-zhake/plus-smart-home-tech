@@ -6,9 +6,8 @@ import org.apache.avro.io.DatumWriter;
 import org.apache.avro.io.EncoderFactory;
 import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.avro.specific.SpecificRecordBase;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.collector.model.*;
 import ru.yandex.practicum.kafka.telemetry.event.*;
@@ -21,7 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CollectorService {
 
-    private final KafkaProducer<String, byte[]> kafkaProducer;
+    private final KafkaTemplate<String, byte[]> kafkaTemplate;
 
     @Value("${collector.kafka.topics.sensors}")
     private String sensorsTopic;
@@ -141,7 +140,7 @@ public class CollectorService {
             DatumWriter<T> writer = new SpecificDatumWriter<>(avro.getSchema());
             writer.write(avro, encoder);
             encoder.flush();
-            kafkaProducer.send(new ProducerRecord<>(topic, key, out.toByteArray()));
+            kafkaTemplate.send(topic, key, out.toByteArray());
         } catch (IOException e) {
             throw new RuntimeException("Ошибка сериализации Avro", e);
         }
