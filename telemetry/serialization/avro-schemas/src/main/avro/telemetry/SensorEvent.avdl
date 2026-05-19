@@ -1,4 +1,47 @@
 @namespace("ru.yandex.practicum.kafka.telemetry.event")
 protocol SensorEventProtocol {
 
+    // --- Записи payload-типов — объявляются до корневой записи ---
+
+    record ClimateSensorAvro {
+        int temperature_c;
+        int humidity;
+        int co2_level;
+    }
+
+    record LightSensorAvro {
+        int link_quality;
+        int luminosity;
+    }
+
+    record MotionSensorAvro {
+        int link_quality;
+        boolean motion;
+        int voltage;
+    }
+
+    record SwitchSensorAvro {
+        boolean state;
+    }
+
+    record TemperatureSensorAvro {
+        int temperature_c;
+        int temperature_f;
+    }
+
+    // --- Корневая запись — объявляется последней ---
+
+    record SensorEventAvro {
+        string id;
+        string hub_id;
+        @logicalType("timestamp-millis")
+        long timestamp;
+        union {
+            ClimateSensorAvro,
+            LightSensorAvro,
+            MotionSensorAvro,
+            SwitchSensorAvro,
+            TemperatureSensorAvro
+        } payload;
+    }
 }
