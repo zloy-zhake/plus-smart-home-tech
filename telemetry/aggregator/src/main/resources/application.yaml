@@ -1,0 +1,12 @@
+spring:
+  main:
+    web-application-type: none
+
+aggregator:
+  kafka:
+    topics:
+      sensors: telemetry.sensors.v1
+      snapshots: telemetry.snapshots.v1
+
+kafka:
+  bootstrap-servers: localhost:9092
