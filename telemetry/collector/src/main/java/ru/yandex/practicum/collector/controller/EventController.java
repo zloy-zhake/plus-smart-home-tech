@@ -13,6 +13,7 @@ import ru.yandex.practicum.grpc.telemetry.event.HubEventProto;
 import ru.yandex.practicum.grpc.telemetry.event.SensorEventProto;
 
 import java.time.Instant;
+import java.util.List;
 
 @GrpcService
 @RequiredArgsConstructor
@@ -37,13 +38,73 @@ public class EventController extends CollectorControllerGrpc.CollectorController
     public void collectHubEvent(HubEventProto request,
                                 StreamObserver<Empty> responseObserver) {
         try {
-            // конвертация Proto → DTO и передача в сервис — шаг 6
+            collectorService.collectHubEvent(toHubEvent(request));
             responseObserver.onNext(Empty.getDefaultInstance());
             responseObserver.onCompleted();
         } catch (Exception e) {
             responseObserver.onError(new StatusRuntimeException(
                     Status.INTERNAL.withDescription(e.getMessage()).withCause(e)));
         }
+    }
+
+    private HubEvent toHubEvent(HubEventProto request) {
+        HubEvent event = switch (request.getPayloadCase()) {
+            case DEVICE_ADDED -> {
+                DeviceAddedEvent e = new DeviceAddedEvent();
+                e.setId(request.getDeviceAdded().getId());
+                e.setDeviceType(DeviceType.valueOf(request.getDeviceAdded().getType().name()));
+                yield e;
+            }
+            case DEVICE_REMOVED -> {
+                DeviceRemovedEvent e = new DeviceRemovedEvent();
+                e.setId(request.getDeviceRemoved().getId());
+                yield e;
+            }
+            case SCENARIO_ADDED -> {
+                List<ScenarioCondition> conditions = request.getScenarioAdded().getConditionList().stream()
+                        .map(c -> {
+                            ScenarioCondition condition = new ScenarioCondition();
+                            condition.setSensorId(c.getSensorId());
+                            condition.setType(ConditionType.valueOf(c.getType().name()));
+                            condition.setOperation(ConditionOperation.valueOf(c.getOperation().name()));
+                            condition.setValue(switch (c.getValueCase()) {
+                                case BOOL_VALUE -> c.getBoolValue() ? 1 : 0;
+                                case INT_VALUE -> c.getIntValue();
+                                default -> null;
+                            });
+                            return condition;
+                        })
+                        .toList();
+                List<DeviceAction> actions = request.getScenarioAdded().getActionList().stream()
+                        .map(a -> {
+                            DeviceAction action = new DeviceAction();
+                            action.setSensorId(a.getSensorId());
+                            action.setType(ActionType.valueOf(a.getType().name()));
+                            action.setValue(a.hasValue() ? a.getValue() : null);
+                            return action;
+                        })
+                        .toList();
+                ScenarioAddedEvent e = new ScenarioAddedEvent();
+                e.setName(request.getScenarioAdded().getName());
+                e.setConditions(conditions);
+                e.setActions(actions);
+                yield e;
+            }
+            case SCENARIO_REMOVED -> {
+                ScenarioRemovedEvent e = new ScenarioRemovedEvent();
+                e.setName(request.getScenarioRemoved().getName());
+                yield e;
+            }
+            default -> throw new IllegalArgumentException(
+                    "Неизвестный тип события хаба: " + request.getPayloadCase());
+        };
+
+        event.setHubId(request.getHubId());
+        event.setTimestamp(Instant.ofEpochSecond(
+                request.getTimestamp().getSeconds(),
+                request.getTimestamp().getNanos()));
+
+        return event;
     }
 
     private SensorEvent toSensorEvent(SensorEventProto request) {
