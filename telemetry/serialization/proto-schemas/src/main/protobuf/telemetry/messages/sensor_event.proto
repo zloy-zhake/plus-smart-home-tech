@@ -38,10 +38,10 @@ message SensorEventProto {
   google.protobuf.Timestamp timestamp = 2; // таймстемп события
   string hubId = 3; // идентификатор связанного хаба
   oneof payload {// данные события от конкретного устройства
-    MotionSensorProto motion_sensor = 4;            // данные события датчика движения
-    TemperatureSensorProto temperature_sensor = 5;  // данные события температурного датчика
-    LightSensorProto light_sensor = 6;              // данные события датчика освещения
-    ClimateSensorProto climate_sensor = 7;          // данные события климатического датчика
-    SwitchSensorProto switch_sensor = 8;            // данные события датчика-переключателя
+    MotionSensorProto motion_sensor_event = 4;            // данные события датчика движения
+    TemperatureSensorProto temperature_sensor_event = 5;  // данные события температурного датчика
+    LightSensorProto light_sensor_event = 6;              // данные события датчика освещения
+    ClimateSensorProto climate_sensor_event = 7;          // данные события климатического датчика
+    SwitchSensorProto switch_sensor_event = 8;            // данные события датчика-переключателя
   }
 }
