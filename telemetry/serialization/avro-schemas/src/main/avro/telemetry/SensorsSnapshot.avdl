@@ -1,0 +1,27 @@
+@namespace("ru.yandex.practicum.kafka.telemetry.event")
+protocol SensorsSnapshotProtocol {
+
+    // --- Импортируем типы датчиков из SensorEvent.avdl ---
+    import idl "SensorEvent.avdl";
+
+    // --- Запись-зависимость — объявляется до корневой ---
+
+    record SensorStateAvro {
+        timestamp_ms timestamp;
+        union {
+            ClimateSensorAvro,
+            LightSensorAvro,
+            MotionSensorAvro,
+            SwitchSensorAvro,
+            TemperatureSensorAvro
+        } data;
+    }
+
+    // --- Корневая запись — объявляется последней ---
+
+    record SensorsSnapshotAvro {
+        string hubId;
+        timestamp_ms timestamp;
+        map<SensorStateAvro> sensorsState;
+    }
+}
