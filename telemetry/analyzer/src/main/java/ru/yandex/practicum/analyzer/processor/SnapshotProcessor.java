@@ -59,7 +59,11 @@ public class SnapshotProcessor {
                 ConsumerRecords<String, SensorsSnapshotAvro> records =
                         consumer.poll(Duration.ofSeconds(5));
                 for (ConsumerRecord<String, SensorsSnapshotAvro> record : records) {
-                    analyzeSnapshot(record.value());
+                    try {
+                        analyzeSnapshot(record.value());
+                    } catch (Exception e) {
+                        log.error("Ошибка обработки снапшота {}", record.key(), e);
+                    }
                 }
                 consumer.commitSync();
             }
@@ -104,9 +108,9 @@ public class SnapshotProcessor {
                 case LUMINOSITY -> ((LightSensorAvro) data).getLuminosity();
                 case SWITCH -> ((SwitchSensorAvro) data).getState() ? 1 : 0;
                 case TEMPERATURE -> data instanceof ClimateSensorAvro c
-                        ? c.getTemperature_c()
-                        : ((TemperatureSensorAvro) data).getTemperature_c();
-                case CO2LEVEL -> ((ClimateSensorAvro) data).getCo2_level();
+                        ? c.getTemperatureC()
+                        : ((TemperatureSensorAvro) data).getTemperatureC();
+                case CO2LEVEL -> ((ClimateSensorAvro) data).getCo2Level();
                 case HUMIDITY -> ((ClimateSensorAvro) data).getHumidity();
             };
         } catch (ClassCastException e) {
