@@ -29,6 +29,8 @@ import ru.yandex.practicum.kafka.telemetry.event.ScenarioRemovedEventAvro;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -92,41 +94,51 @@ public class HubEventService {
         scenarioRepository.findByHubIdAndName(hubId, event.getName())
                 .ifPresent(this::deleteScenarioWithCleanup);
 
+        Map<String, Sensor> sensorMap = sensorRepository.findAllByIdInAndHubId(sensorIds, hubId)
+                .stream()
+                .collect(Collectors.toMap(Sensor::getId, s -> s));
+
         Scenario scenario = new Scenario();
         scenario.setHubId(hubId);
         scenario.setName(event.getName());
 
+        List<Condition> conditions = new ArrayList<>();
         for (ScenarioConditionAvro avroCondition : event.getConditions()) {
             Condition condition = new Condition();
             condition.setType(ConditionType.valueOf(avroCondition.getType().name()));
             condition.setOperation(ConditionOperation.valueOf(avroCondition.getOperation().name()));
             Object val = avroCondition.getValue();
             condition.setValue(val == null ? null : val instanceof Boolean b ? (b ? 1 : 0) : (Integer) val);
-            conditionRepository.save(condition);
+            conditions.add(condition);
+        }
+        conditionRepository.saveAll(conditions);
 
-            Sensor sensor = sensorRepository.findByIdAndHubId(avroCondition.getSensorId(), hubId).orElseThrow();
-
+        List<ScenarioConditionAvro> avroConditions = event.getConditions();
+        for (int i = 0; i < avroConditions.size(); i++) {
             ScenarioCondition sc = new ScenarioCondition();
             sc.setId(new ScenarioConditionId());
             sc.setScenario(scenario);
-            sc.setSensor(sensor);
-            sc.setCondition(condition);
+            sc.setSensor(sensorMap.get(avroConditions.get(i).getSensorId()));
+            sc.setCondition(conditions.get(i));
             scenario.getConditions().add(sc);
         }
 
+        List<Action> actions = new ArrayList<>();
         for (DeviceActionAvro avroAction : event.getActions()) {
             Action action = new Action();
             action.setType(ActionType.valueOf(avroAction.getType().name()));
             action.setValue((Integer) avroAction.getValue());
-            actionRepository.save(action);
+            actions.add(action);
+        }
+        actionRepository.saveAll(actions);
 
-            Sensor sensor = sensorRepository.findByIdAndHubId(avroAction.getSensorId(), hubId).orElseThrow();
-
+        List<DeviceActionAvro> avroActions = event.getActions();
+        for (int i = 0; i < avroActions.size(); i++) {
             ScenarioAction sa = new ScenarioAction();
             sa.setId(new ScenarioActionId());
             sa.setScenario(scenario);
-            sa.setSensor(sensor);
-            sa.setAction(action);
+            sa.setSensor(sensorMap.get(avroActions.get(i).getSensorId()));
+            sa.setAction(actions.get(i));
             scenario.getActions().add(sa);
         }
 
