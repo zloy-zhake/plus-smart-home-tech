@@ -17,6 +17,17 @@ services:
       KAFKA_LISTENERS: 'PLAINTEXT://kafka:29092,CONTROLLER://kafka:29093,PLAINTEXT_HOST://0.0.0.0:9092'
       CLUSTER_ID: 'K0EA9p0yEe6MkAAAAkKsEg'
 
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: analyzer
+      POSTGRES_USER: analyzer
+      POSTGRES_PASSWORD: analyzer
+
   kafka-init-topics:
     image: confluentinc/confluent-local:7.4.3
     container_name: kafka-init-topics
