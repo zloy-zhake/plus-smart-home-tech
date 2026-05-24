@@ -10,6 +10,7 @@ import ru.yandex.practicum.feign.ShoppingStoreClient;
 import ru.yandex.practicum.model.Product;
 import ru.yandex.practicum.service.ShoppingStoreService;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,12 +22,22 @@ public class ShoppingStoreController implements ShoppingStoreClient {
 
     @Override
     public ProductsPageDto getProducts(ProductCategory category, int page, int size, List<String> sort) {
-        Sort sortObj = Sort.by(sort.stream()
-                .map(s -> s.split(","))
-                .map(parts -> parts.length > 1 && parts[1].trim().equalsIgnoreCase("desc")
-                        ? Sort.Order.desc(parts[0].trim())
-                        : Sort.Order.asc(parts[0].trim()))
-                .toList());
+        // Spring MVC splits "productName,asc" into ["productName","asc"] via StringToCollectionConverter.
+        // Rejoin all tokens and process as field+direction pairs.
+        String[] tokens = String.join(",", sort).split(",");
+        List<Sort.Order> orders = new ArrayList<>();
+        for (int i = 0; i < tokens.length; i++) {
+            String field = tokens[i].trim();
+            if (i + 1 < tokens.length &&
+                    (tokens[i + 1].trim().equalsIgnoreCase("asc") || tokens[i + 1].trim().equalsIgnoreCase("desc"))) {
+                orders.add(tokens[i + 1].trim().equalsIgnoreCase("desc")
+                        ? Sort.Order.desc(field) : Sort.Order.asc(field));
+                i++;
+            } else {
+                orders.add(Sort.Order.asc(field));
+            }
+        }
+        Sort sortObj = orders.isEmpty() ? Sort.unsorted() : Sort.by(orders);
         PageRequest pageRequest = PageRequest.of(page, size, sortObj);
         Page<Product> products = shoppingStoreService.getProducts(category, pageRequest);
         return new ProductsPageDto(
