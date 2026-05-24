@@ -27,6 +27,8 @@ services:
       POSTGRES_DB: analyzer
       POSTGRES_USER: analyzer
       POSTGRES_PASSWORD: analyzer
+    volumes:
+      - ./init-commerce-dbs.sql:/docker-entrypoint-initdb.d/init-commerce-dbs.sql
 
   kafka-init-topics:
     image: confluentinc/confluent-local:7.4.3
