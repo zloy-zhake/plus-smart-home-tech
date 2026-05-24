@@ -12,15 +12,15 @@ public interface ShoppingStoreClient {
 
     @GetMapping("/api/v1/shopping-store")
     ProductsPageDto getProducts(@RequestParam ProductCategory category,
-                                @RequestParam int page,
-                                @RequestParam int size,
-                                @RequestParam List<String> sort);
+                                @RequestParam(defaultValue = "0") int page,
+                                @RequestParam(defaultValue = "10") int size,
+                                @RequestParam(required = false) List<String> sort);
 
     @PutMapping("/api/v1/shopping-store")
-    ProductDto updateProduct(@RequestBody ProductDto product);
+    ProductDto addProductToStore(@RequestBody ProductDto product);
 
     @PostMapping("/api/v1/shopping-store")
-    ProductDto createNewProduct(@RequestBody ProductDto product);
+    ProductDto updateProduct(@RequestBody ProductDto product);
 
     @GetMapping("/api/v1/shopping-store/{productId}")
     ProductDto getProductById(@PathVariable UUID productId);
@@ -29,5 +29,6 @@ public interface ShoppingStoreClient {
     Boolean removeProductFromStore(@RequestBody UUID productId);
 
     @PostMapping("/api/v1/shopping-store/quantityState")
-    Boolean setProductQuantityState(@RequestBody SetProductQuantityStateRequest request);
+    Boolean setProductQuantityState(@RequestParam UUID productId,
+                                    @RequestParam QuantityState quantityState);
 }

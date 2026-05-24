@@ -11,6 +11,7 @@ import ru.yandex.practicum.model.Product;
 import ru.yandex.practicum.service.ShoppingStoreService;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,12 +23,14 @@ public class ShoppingStoreController implements ShoppingStoreClient {
 
     @Override
     public ProductsPageDto getProducts(ProductCategory category, int page, int size, List<String> sort) {
+        if (sort == null) sort = Collections.emptyList();
         // Spring MVC splits "productName,asc" into ["productName","asc"] via StringToCollectionConverter.
         // Rejoin all tokens and process as field+direction pairs.
         String[] tokens = String.join(",", sort).split(",");
         List<Sort.Order> orders = new ArrayList<>();
         for (int i = 0; i < tokens.length; i++) {
             String field = tokens[i].trim();
+            if (field.isEmpty()) continue;
             if (i + 1 < tokens.length &&
                     (tokens[i + 1].trim().equalsIgnoreCase("asc") || tokens[i + 1].trim().equalsIgnoreCase("desc"))) {
                 orders.add(tokens[i + 1].trim().equalsIgnoreCase("desc")
@@ -50,13 +53,13 @@ public class ShoppingStoreController implements ShoppingStoreClient {
     }
 
     @Override
-    public ProductDto updateProduct(ProductDto product) {
-        return toDto(shoppingStoreService.updateProduct(product));
+    public ProductDto addProductToStore(ProductDto product) {
+        return toDto(shoppingStoreService.createNewProduct(product));
     }
 
     @Override
-    public ProductDto createNewProduct(ProductDto product) {
-        return toDto(shoppingStoreService.createNewProduct(product));
+    public ProductDto updateProduct(ProductDto product) {
+        return toDto(shoppingStoreService.updateProduct(product));
     }
 
     @Override
@@ -70,8 +73,8 @@ public class ShoppingStoreController implements ShoppingStoreClient {
     }
 
     @Override
-    public Boolean setProductQuantityState(SetProductQuantityStateRequest request) {
-        return shoppingStoreService.setProductQuantityState(request);
+    public Boolean setProductQuantityState(UUID productId, QuantityState quantityState) {
+        return shoppingStoreService.setProductQuantityState(new SetProductQuantityStateRequest(productId, quantityState));
     }
 
     private ProductDto toDto(Product product) {
