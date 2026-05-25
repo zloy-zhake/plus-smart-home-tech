@@ -2,16 +2,30 @@ spring:
   application:
     name: collector
   config:
-    import: "configserver:"
+    import: "optional:configserver:"
   cloud:
     config:
       discovery:
         enabled: true
         serviceId: config-server
-      fail-fast: true
-      retry:
-        useRandomPolicy: true
-        max-interval: 6000
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.ByteArraySerializer
+
+server:
+  port: 8080
+
+collector:
+  kafka:
+    topics:
+      sensors: telemetry.sensors.v1
+      hubs: telemetry.hubs.v1
+
+grpc:
+  server:
+    port: 59091
 
 eureka:
   client:

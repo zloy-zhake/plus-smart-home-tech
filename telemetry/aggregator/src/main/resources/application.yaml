@@ -2,16 +2,23 @@ spring:
   application:
     name: aggregator
   config:
-    import: "configserver:"
+    import: "optional:configserver:"
   cloud:
     config:
       discovery:
         enabled: true
         serviceId: config-server
-      fail-fast: true
-      retry:
-        useRandomPolicy: true
-        max-interval: 6000
+  main:
+    web-application-type: none
+
+aggregator:
+  kafka:
+    topics:
+      sensors: telemetry.sensors.v1
+      snapshots: telemetry.snapshots.v1
+
+kafka:
+  bootstrap-servers: localhost:9092
 
 eureka:
   client:
