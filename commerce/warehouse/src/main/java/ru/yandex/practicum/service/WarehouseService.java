@@ -12,7 +12,9 @@ import ru.yandex.practicum.repository.WarehouseProductRepository;
 import java.security.SecureRandom;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -49,6 +51,12 @@ public class WarehouseService {
     }
 
     public BookedProductsDto checkProductQuantityEnoughForShoppingCart(ShoppingCartDto cartDto) {
+        Set<UUID> productIds = cartDto.getProducts().keySet();
+
+        Map<UUID, WarehouseProduct> warehouseProducts = warehouseProductRepository.findAllById(productIds)
+                .stream()
+                .collect(Collectors.toMap(WarehouseProduct::getProductId, p -> p));
+
         double deliveryWeight = 0;
         double deliveryVolume = 0;
         boolean fragile = false;
@@ -57,9 +65,11 @@ public class WarehouseService {
             UUID productId = entry.getKey();
             long requestedQuantity = entry.getValue();
 
-            WarehouseProduct product = warehouseProductRepository.findById(productId)
-                    .orElseThrow(() -> new ProductInShoppingCartLowQuantityInWarehouse(
-                            "Товар отсутствует на складе: " + productId));
+            WarehouseProduct product = warehouseProducts.get(productId);
+            if (product == null) {
+                throw new ProductInShoppingCartLowQuantityInWarehouse(
+                        "Товар отсутствует на складе: " + productId);
+            }
 
             if (product.getQuantity() < requestedQuantity) {
                 throw new ProductInShoppingCartLowQuantityInWarehouse(
