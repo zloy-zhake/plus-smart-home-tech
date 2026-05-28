@@ -2,11 +2,14 @@ package ru.yandex.practicum.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.dto.*;
 import ru.yandex.practicum.exception.NoSpecifiedProductInWarehouseException;
 import ru.yandex.practicum.exception.ProductInShoppingCartLowQuantityInWarehouse;
 import ru.yandex.practicum.exception.SpecifiedProductAlreadyInWarehouseException;
+import ru.yandex.practicum.model.OrderBooking;
 import ru.yandex.practicum.model.WarehouseProduct;
+import ru.yandex.practicum.repository.OrderBookingRepository;
 import ru.yandex.practicum.repository.WarehouseProductRepository;
 
 import java.security.SecureRandom;
@@ -25,6 +28,7 @@ public class WarehouseService {
             ADDRESSES[Random.from(new SecureRandom()).nextInt(0, ADDRESSES.length)];
 
     private final WarehouseProductRepository warehouseProductRepository;
+    private final OrderBookingRepository orderBookingRepository;
 
     public void newProductInWarehouse(NewProductInWarehouseRequest request) {
         if (warehouseProductRepository.existsById(request.getProductId())) {
@@ -89,5 +93,68 @@ public class WarehouseService {
     public AddressDto getWarehouseAddress() {
         return new AddressDto(
                 CURRENT_ADDRESS, CURRENT_ADDRESS, CURRENT_ADDRESS, CURRENT_ADDRESS, CURRENT_ADDRESS);
+    }
+
+    @Transactional
+    public BookedProductsDto assemblyProductsForOrder(AssemblyProductsForOrderRequest request) {
+        Set<UUID> productIds = request.getProducts().keySet();
+
+        Map<UUID, WarehouseProduct> warehouseProducts = warehouseProductRepository.findAllById(productIds)
+                .stream()
+                .collect(Collectors.toMap(WarehouseProduct::getProductId, p -> p));
+
+        double deliveryWeight = 0;
+        double deliveryVolume = 0;
+        boolean fragile = false;
+
+        for (Map.Entry<UUID, Long> entry : request.getProducts().entrySet()) {
+            UUID productId = entry.getKey();
+            long requestedQuantity = entry.getValue();
+
+            WarehouseProduct product = warehouseProducts.get(productId);
+            if (product == null) {
+                throw new ProductInShoppingCartLowQuantityInWarehouse(
+                        "Товар отсутствует на складе: " + productId);
+            }
+            if (product.getQuantity() < requestedQuantity) {
+                throw new ProductInShoppingCartLowQuantityInWarehouse(
+                        "Недостаточно товара для сборки заказа: " + productId);
+            }
+
+            product.setQuantity(product.getQuantity() - requestedQuantity);
+            warehouseProductRepository.save(product);
+
+            deliveryWeight += product.getWeight() * requestedQuantity;
+            deliveryVolume += product.getWidth() * product.getHeight() * product.getDepth() * requestedQuantity;
+            if (product.isFragile()) {
+                fragile = true;
+            }
+        }
+
+        OrderBooking booking = new OrderBooking();
+        booking.setOrderId(request.getOrderId());
+        booking.setProducts(request.getProducts());
+        orderBookingRepository.save(booking);
+
+        return new BookedProductsDto(deliveryWeight, deliveryVolume, fragile);
+    }
+
+    public void shippedToDelivery(ShippedToDeliveryRequest request) {
+        OrderBooking booking = orderBookingRepository.findByOrderId(request.getOrderId())
+                .orElseThrow(() -> new RuntimeException(
+                        "Бронь заказа не найдена: " + request.getOrderId()));
+        booking.setDeliveryId(request.getDeliveryId());
+        orderBookingRepository.save(booking);
+    }
+
+    @Transactional
+    public void acceptReturn(Map<UUID, Long> products) {
+        for (Map.Entry<UUID, Long> entry : products.entrySet()) {
+            WarehouseProduct product = warehouseProductRepository.findById(entry.getKey())
+                    .orElseThrow(() -> new NoSpecifiedProductInWarehouseException(
+                            "Товар не найден на складе: " + entry.getKey()));
+            product.setQuantity(product.getQuantity() + entry.getValue());
+            warehouseProductRepository.save(product);
+        }
     }
 }
