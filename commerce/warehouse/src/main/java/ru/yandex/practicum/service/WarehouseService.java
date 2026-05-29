@@ -14,6 +14,7 @@ import ru.yandex.practicum.repository.WarehouseProductRepository;
 
 import java.math.BigDecimal;
 import java.security.SecureRandom;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -161,19 +162,20 @@ public class WarehouseService {
 
     @Transactional
     public void acceptReturn(Map<UUID, Long> products) {
-        Map<UUID, WarehouseProduct> warehouseProducts = warehouseProductRepository.findAllById(products.keySet())
-                .stream()
-                .collect(Collectors.toMap(WarehouseProduct::getProductId, p -> p));
+        List<WarehouseProduct> warehouseProducts = warehouseProductRepository.findAllById(products.keySet());
 
-        for (Map.Entry<UUID, Long> entry : products.entrySet()) {
-            WarehouseProduct product = warehouseProducts.get(entry.getKey());
-            if (product == null) {
-                throw new NoSpecifiedProductInWarehouseException(
-                        "Товар не найден на складе: " + entry.getKey());
-            }
-            product.setQuantity(product.getQuantity() + entry.getValue());
+        if (warehouseProducts.size() < products.size()) {
+            Set<UUID> foundIds = warehouseProducts.stream()
+                    .map(WarehouseProduct::getProductId)
+                    .collect(Collectors.toSet());
+            products.keySet().stream()
+                    .filter(id -> !foundIds.contains(id))
+                    .findFirst()
+                    .ifPresent(id -> { throw new NoSpecifiedProductInWarehouseException(
+                            "Товар не найден на складе: " + id); });
         }
 
-        warehouseProductRepository.saveAll(warehouseProducts.values());
+        warehouseProducts.forEach(p -> p.setQuantity(p.getQuantity() + products.get(p.getProductId())));
+        warehouseProductRepository.saveAll(warehouseProducts);
     }
 }
