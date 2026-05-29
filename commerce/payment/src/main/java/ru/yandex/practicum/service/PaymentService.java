@@ -12,7 +12,9 @@ import ru.yandex.practicum.repository.PaymentRepository;
 
 import java.math.BigDecimal;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,12 +31,14 @@ public class PaymentService {
             throw new NotEnoughInfoInOrderToCalculateException(
                     "Список товаров заказа пуст, расчёт невозможен");
         }
-        BigDecimal total = BigDecimal.ZERO;
-        for (Map.Entry<UUID, Long> entry : order.getProducts().entrySet()) {
-            ProductDto product = shoppingStoreClient.getProductById(entry.getKey());
-            total = total.add(product.getPrice().multiply(BigDecimal.valueOf(entry.getValue())));
-        }
-        return total;
+        Set<UUID> productIds = order.getProducts().keySet();
+        Map<UUID, ProductDto> productMap = shoppingStoreClient.getProductsByIds(productIds)
+                .stream()
+                .collect(Collectors.toMap(ProductDto::getProductId, p -> p));
+
+        return order.getProducts().entrySet().stream()
+                .map(e -> productMap.get(e.getKey()).getPrice().multiply(BigDecimal.valueOf(e.getValue())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     public BigDecimal getTotalCost(OrderDto order) {
