@@ -10,13 +10,19 @@ import ru.yandex.practicum.model.Address;
 import ru.yandex.practicum.model.Delivery;
 import ru.yandex.practicum.repository.DeliveryRepository;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class DeliveryService {
 
-    private static final double BASE_RATE = 5.0;
+    private static final BigDecimal BASE_RATE = new BigDecimal("5.0");
+    private static final BigDecimal MULTIPLIER_2 = new BigDecimal("2");
+    private static final BigDecimal FRAGILE_RATE = new BigDecimal("0.2");
+    private static final BigDecimal WEIGHT_RATE = new BigDecimal("0.3");
+    private static final BigDecimal VOLUME_RATE = new BigDecimal("0.2");
+    private static final BigDecimal ADDRESS_DIFF_RATE = new BigDecimal("0.2");
 
     private final DeliveryRepository deliveryRepository;
     private final WarehouseClient warehouseClient;
@@ -35,25 +41,25 @@ public class DeliveryService {
         return toDeliveryDto(delivery);
     }
 
-    public double deliveryCost(OrderDto order) {
+    public BigDecimal deliveryCost(OrderDto order) {
         AddressDto warehouseAddr = warehouseClient.getWarehouseAddress();
 
         // Шаг 1: базовая ставка × множитель адреса склада
-        double multiplier = resolveWarehouseMultiplier(warehouseAddr);
-        double step = BASE_RATE * multiplier;
+        BigDecimal multiplier = resolveWarehouseMultiplier(warehouseAddr);
+        BigDecimal step = BASE_RATE.multiply(multiplier);
         // Шаг 2: прибавляем базовую ставку
-        step = step + BASE_RATE;
+        step = step.add(BASE_RATE);
 
         // Шаг 3: надбавка за хрупкость
         if (order.isFragile()) {
-            step = step + step * 0.2;
+            step = step.add(step.multiply(FRAGILE_RATE));
         }
 
         // Шаг 4: вес
-        step = step + order.getDeliveryWeight() * 0.3;
+        step = step.add(order.getDeliveryWeight().multiply(WEIGHT_RATE));
 
         // Шаг 5: объём
-        step = step + order.getDeliveryVolume() * 0.2;
+        step = step.add(order.getDeliveryVolume().multiply(VOLUME_RATE));
 
         // Шаг 6: надбавка если адрес доставки не совпадает с улицей склада
         Delivery delivery = deliveryRepository.findByOrderId(order.getOrderId())
@@ -62,7 +68,7 @@ public class DeliveryService {
         String warehouseStreet = warehouseAddr.getStreet();
         String deliveryStreet = delivery.getToAddress() != null ? delivery.getToAddress().getStreet() : null;
         if (warehouseStreet == null || !warehouseStreet.equals(deliveryStreet)) {
-            step = step + step * 0.2;
+            step = step.add(step.multiply(ADDRESS_DIFF_RATE));
         }
 
         return step;
@@ -96,12 +102,11 @@ public class DeliveryService {
                         "Доставка не найдена для заказа: " + orderId));
     }
 
-    private double resolveWarehouseMultiplier(AddressDto address) {
+    private BigDecimal resolveWarehouseMultiplier(AddressDto address) {
         String combined = address.getCountry() + address.getCity()
                 + address.getStreet() + address.getHouse() + address.getFlat();
-        if (combined.contains("ADDRESS_2")) return 2.0;
-        if (combined.contains("ADDRESS_1")) return 1.0;
-        return 1.0;
+        if (combined.contains("ADDRESS_2")) return MULTIPLIER_2;
+        return BigDecimal.ONE;
     }
 
     private Address toAddress(AddressDto dto) {

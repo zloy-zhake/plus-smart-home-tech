@@ -23,7 +23,7 @@ public class DeliveryController implements DeliveryClient {
 
     @Override
     public BigDecimal deliveryCost(OrderDto order) {
-        return BigDecimal.valueOf(deliveryService.deliveryCost(order));
+        return deliveryService.deliveryCost(order);
     }
 
     @Override
