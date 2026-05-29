@@ -18,8 +18,8 @@ public class OrderDto {
     private UUID paymentId;
     private UUID deliveryId;
     private OrderState state;
-    private double deliveryWeight;
-    private double deliveryVolume;
+    private BigDecimal deliveryWeight;
+    private BigDecimal deliveryVolume;
     private boolean fragile;
     private BigDecimal totalPrice;
     private BigDecimal deliveryPrice;

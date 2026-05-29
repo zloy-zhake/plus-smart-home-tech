@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Data
@@ -15,7 +16,7 @@ public class DeliveryDto {
     private AddressDto toAddress;
     private UUID orderId;
     private DeliveryState deliveryState;
-    private double deliveryWeight;
-    private double deliveryVolume;
+    private BigDecimal deliveryWeight;
+    private BigDecimal deliveryVolume;
     private boolean fragile;
 }
