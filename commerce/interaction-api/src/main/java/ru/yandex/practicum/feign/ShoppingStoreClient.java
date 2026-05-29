@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.dto.*;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @FeignClient(name = "shopping-store")
@@ -24,6 +25,9 @@ public interface ShoppingStoreClient {
 
     @GetMapping("/api/v1/shopping-store/{productId}")
     ProductDto getProductById(@PathVariable UUID productId);
+
+    @PostMapping("/api/v1/shopping-store/getProductsByIds")
+    List<ProductDto> getProductsByIds(@RequestBody Set<UUID> productIds);
 
     @PostMapping("/api/v1/shopping-store/removeProductFromStore")
     Boolean removeProductFromStore(@RequestBody UUID productId);
