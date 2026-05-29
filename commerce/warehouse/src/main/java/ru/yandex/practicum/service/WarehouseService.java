@@ -12,6 +12,7 @@ import ru.yandex.practicum.model.WarehouseProduct;
 import ru.yandex.practicum.repository.OrderBookingRepository;
 import ru.yandex.practicum.repository.WarehouseProductRepository;
 
+import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.util.Map;
 import java.util.Random;
@@ -61,8 +62,8 @@ public class WarehouseService {
                 .stream()
                 .collect(Collectors.toMap(WarehouseProduct::getProductId, p -> p));
 
-        double deliveryWeight = 0;
-        double deliveryVolume = 0;
+        BigDecimal deliveryWeight = BigDecimal.ZERO;
+        BigDecimal deliveryVolume = BigDecimal.ZERO;
         boolean fragile = false;
 
         for (Map.Entry<UUID, Long> entry : cartDto.getProducts().entrySet()) {
@@ -80,8 +81,13 @@ public class WarehouseService {
                         "Недостаточно товара на складе: " + productId);
             }
 
-            deliveryWeight += product.getWeight() * requestedQuantity;
-            deliveryVolume += product.getWidth() * product.getHeight() * product.getDepth() * requestedQuantity;
+            deliveryWeight = deliveryWeight.add(
+                BigDecimal.valueOf(product.getWeight()).multiply(BigDecimal.valueOf(requestedQuantity)));
+            deliveryVolume = deliveryVolume.add(
+                BigDecimal.valueOf(product.getWidth())
+                    .multiply(BigDecimal.valueOf(product.getHeight()))
+                    .multiply(BigDecimal.valueOf(product.getDepth()))
+                    .multiply(BigDecimal.valueOf(requestedQuantity)));
             if (product.isFragile()) {
                 fragile = true;
             }
@@ -103,8 +109,8 @@ public class WarehouseService {
                 .stream()
                 .collect(Collectors.toMap(WarehouseProduct::getProductId, p -> p));
 
-        double deliveryWeight = 0;
-        double deliveryVolume = 0;
+        BigDecimal deliveryWeight = BigDecimal.ZERO;
+        BigDecimal deliveryVolume = BigDecimal.ZERO;
         boolean fragile = false;
 
         for (Map.Entry<UUID, Long> entry : request.getProducts().entrySet()) {
@@ -124,8 +130,13 @@ public class WarehouseService {
             product.setQuantity(product.getQuantity() - requestedQuantity);
             warehouseProductRepository.save(product);
 
-            deliveryWeight += product.getWeight() * requestedQuantity;
-            deliveryVolume += product.getWidth() * product.getHeight() * product.getDepth() * requestedQuantity;
+            deliveryWeight = deliveryWeight.add(
+                BigDecimal.valueOf(product.getWeight()).multiply(BigDecimal.valueOf(requestedQuantity)));
+            deliveryVolume = deliveryVolume.add(
+                BigDecimal.valueOf(product.getWidth())
+                    .multiply(BigDecimal.valueOf(product.getHeight()))
+                    .multiply(BigDecimal.valueOf(product.getDepth()))
+                    .multiply(BigDecimal.valueOf(requestedQuantity)));
             if (product.isFragile()) {
                 fragile = true;
             }
