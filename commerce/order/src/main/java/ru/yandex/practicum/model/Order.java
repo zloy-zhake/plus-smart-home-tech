@@ -37,9 +37,9 @@ public class Order {
     @Enumerated(EnumType.STRING)
     private OrderState state;
 
-    private double deliveryWeight;
+    private BigDecimal deliveryWeight;
 
-    private double deliveryVolume;
+    private BigDecimal deliveryVolume;
 
     private boolean fragile;
 

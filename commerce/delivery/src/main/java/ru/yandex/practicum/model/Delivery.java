@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import ru.yandex.practicum.dto.DeliveryState;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Getter
@@ -42,9 +43,9 @@ public class Delivery {
     @Enumerated(EnumType.STRING)
     private DeliveryState deliveryState;
 
-    private double deliveryWeight;
+    private BigDecimal deliveryWeight;
 
-    private double deliveryVolume;
+    private BigDecimal deliveryVolume;
 
     private boolean fragile;
 }
