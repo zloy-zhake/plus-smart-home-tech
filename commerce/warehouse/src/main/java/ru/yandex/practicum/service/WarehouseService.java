@@ -141,6 +141,8 @@ public class WarehouseService {
             }
         }
 
+        warehouseProductRepository.saveAll(warehouseProducts.values());
+
         OrderBooking booking = new OrderBooking();
         booking.setOrderId(request.getOrderId());
         booking.setProducts(request.getProducts());
@@ -171,5 +173,7 @@ public class WarehouseService {
             }
             product.setQuantity(product.getQuantity() + entry.getValue());
         }
+
+        warehouseProductRepository.saveAll(warehouseProducts.values());
     }
 }
