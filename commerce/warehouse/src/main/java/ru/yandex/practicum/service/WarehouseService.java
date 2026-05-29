@@ -128,7 +128,6 @@ public class WarehouseService {
             }
 
             product.setQuantity(product.getQuantity() - requestedQuantity);
-            warehouseProductRepository.save(product);
 
             deliveryWeight = deliveryWeight.add(
                 BigDecimal.valueOf(product.getWeight()).multiply(BigDecimal.valueOf(requestedQuantity)));
@@ -160,12 +159,17 @@ public class WarehouseService {
 
     @Transactional
     public void acceptReturn(Map<UUID, Long> products) {
+        Map<UUID, WarehouseProduct> warehouseProducts = warehouseProductRepository.findAllById(products.keySet())
+                .stream()
+                .collect(Collectors.toMap(WarehouseProduct::getProductId, p -> p));
+
         for (Map.Entry<UUID, Long> entry : products.entrySet()) {
-            WarehouseProduct product = warehouseProductRepository.findById(entry.getKey())
-                    .orElseThrow(() -> new NoSpecifiedProductInWarehouseException(
-                            "Товар не найден на складе: " + entry.getKey()));
+            WarehouseProduct product = warehouseProducts.get(entry.getKey());
+            if (product == null) {
+                throw new NoSpecifiedProductInWarehouseException(
+                        "Товар не найден на складе: " + entry.getKey());
+            }
             product.setQuantity(product.getQuantity() + entry.getValue());
-            warehouseProductRepository.save(product);
         }
     }
 }
