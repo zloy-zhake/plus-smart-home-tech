@@ -6,6 +6,9 @@ import ru.yandex.practicum.dto.*;
 import ru.yandex.practicum.feign.WarehouseClient;
 import ru.yandex.practicum.service.WarehouseService;
 
+import java.util.Map;
+import java.util.UUID;
+
 @RestController
 @RequiredArgsConstructor
 public class WarehouseController implements WarehouseClient {
@@ -30,5 +33,20 @@ public class WarehouseController implements WarehouseClient {
     @Override
     public AddressDto getWarehouseAddress() {
         return warehouseService.getWarehouseAddress();
+    }
+
+    @Override
+    public BookedProductsDto assemblyProductsForOrder(AssemblyProductsForOrderRequest request) {
+        return warehouseService.assemblyProductsForOrder(request);
+    }
+
+    @Override
+    public void shippedToDelivery(ShippedToDeliveryRequest request) {
+        warehouseService.shippedToDelivery(request);
+    }
+
+    @Override
+    public void acceptReturn(Map<UUID, Long> products) {
+        warehouseService.acceptReturn(products);
     }
 }

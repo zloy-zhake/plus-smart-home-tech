@@ -47,11 +47,11 @@ public class ShoppingCartService {
         validateUsername(username);
         ShoppingCart cart = cartRepository.findByUsernameAndActiveTrue(username)
                 .orElseThrow(() -> new NoProductsInShoppingCartException("Активная корзина не найдена"));
-        for (UUID productId : productIds) {
-            if (!cart.getProducts().containsKey(productId)) {
-                throw new NoProductsInShoppingCartException("Товар не найден в корзине: " + productId);
-            }
-        }
+        productIds.stream()
+                .filter(id -> !cart.getProducts().containsKey(id))
+                .findFirst()
+                .ifPresent(id -> { throw new NoProductsInShoppingCartException(
+                        "Товар не найден в корзине: " + id); });
         productIds.forEach(cart.getProducts()::remove);
         cartRepository.save(cart);
         return toDto(cart);

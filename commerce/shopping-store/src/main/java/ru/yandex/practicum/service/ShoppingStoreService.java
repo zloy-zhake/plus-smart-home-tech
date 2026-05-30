@@ -9,6 +9,10 @@ import ru.yandex.practicum.exception.ProductNotFoundException;
 import ru.yandex.practicum.model.Product;
 import ru.yandex.practicum.repository.ProductRepository;
 
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class ShoppingStoreService {
@@ -19,7 +23,11 @@ public class ShoppingStoreService {
         return productRepository.findAllByProductCategory(category, pageable);
     }
 
-    public Product getProduct(java.util.UUID productId) {
+    public List<Product> getProductsByIds(Set<UUID> productIds) {
+        return productRepository.findAllById(productIds);
+    }
+
+    public Product getProduct(UUID productId) {
         return productRepository.findById(productId)
                 .orElseThrow(() -> new ProductNotFoundException("Товар не найден: " + productId));
     }
@@ -37,7 +45,7 @@ public class ShoppingStoreService {
         return productRepository.save(product);
     }
 
-    public boolean removeProductFromStore(java.util.UUID productId) {
+    public boolean removeProductFromStore(UUID productId) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ProductNotFoundException("Товар не найден: " + productId));
         product.setProductState(ProductState.DEACTIVATE);

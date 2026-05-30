@@ -13,6 +13,7 @@ import ru.yandex.practicum.service.ShoppingStoreService;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @RestController
@@ -65,6 +66,14 @@ public class ShoppingStoreController implements ShoppingStoreClient {
     @Override
     public ProductDto getProductById(UUID productId) {
         return toDto(shoppingStoreService.getProduct(productId));
+    }
+
+    @Override
+    public List<ProductDto> getProductsByIds(Set<UUID> productIds) {
+        return shoppingStoreService.getProductsByIds(productIds)
+                .stream()
+                .map(this::toDto)
+                .toList();
     }
 
     @Override
